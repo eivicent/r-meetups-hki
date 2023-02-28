@@ -36,24 +36,26 @@ chocolate %>%
             n_chocolates = n_distinct(ref)) %>% 
   ggplot(aes(x = cocoa_pct_bin,
             fill = cocoa_pct_bin,
-            y = n/n_chocolates)) +
+            y = n_chocolates)) +
   geom_col(position = "dodge")  +
-  geom_text(aes(label = round(n/n_chocolates,2)), vjust = 2) +
-  scale_fill_discrete(guide = "none") + 
+  geom_text(aes(label = round(n/n_chocolates,2)), vjust = 1.2) +
+  scale_y_continuous(breaks = seq(0,1000,100)) + 
+  scale_fill_brewer(type = "sequential",palette = "Oranges", direction = 1,
+                    guide  = "none") + 
   theme_minimal() + 
-  labs(title = "Distinct characteristics used per chocolate",
-       subtitle = "By % of cocoa in the chocolate",
+  labs(title = "Number of chocolates per cocoa group",
+       subtitle = "Text shows: Average unique characteristics",
        x = NULL,
        fill = NULL,
        y = NULL) +
-  theme(panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        axis.text.y = element_blank(),
+  theme(panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         axis.text = element_text(face = "plain", size = rel(0.75)),
-        axis.title = element_text(face = "plain", size = rel(0.9), color = "gray20", hjust = 0),
+        axis.title = element_text(face = "plain", size = rel(0.9), 
+                                  color = "gray20", 
+                                  hjust = 0),
         plot.title.position = "plot",
-        axis.text.x.bottom = element_text(hjust = 0.8, debug = F), 
+        axis.text.x.bottom = element_text(hjust = 0.8, debug = F),
         text = element_text(color ="gray36"),
         plot.title = element_text(face = "bold", size = rel(1.2), color = "black"),
         plot.subtitle = element_text(face = "bold", size = rel(1.1),
