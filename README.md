@@ -14,3 +14,7 @@ Repository to drop the materials for the r-meetups in Helsinki
 	- Code of the app shown can be found in [repo](https://github.com/eivicent/hki_apartments_analyzer)
 	- Can't share Telegram bot app because it has the bot token --> Once I clear that, I will share the code
 
+### 2023-02-28 - R Ladies Helsinki
+- Attending R Ladies Helsinki meetup where we had a "Tidy Tuesday"
+- [Code](./2023_02_28_Rladies/)
+
