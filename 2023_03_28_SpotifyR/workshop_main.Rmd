@@ -1,0 +1,298 @@
+---
+title: "SpotifyR Workshop<br>R User Group Finland"
+author: "Marc Eixarch"
+date: "3/26/2023"
+output: html_notebook
+---
+
+# Prerequisites
+
+--- 
+
+- Make sure to follow the instructions given in our (github page)[https://github.com/eivicent/r-meetups-hki/tree/main/2023_03_28_SpotifyR] to get your Spofity client ID and Secret
+- Install spotifyR library `install.packages('spotifyr')`
+
+--- 
+
+During the workshop we will use the following libraries
+
+```{r}
+# Core
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+
+# Optional
+library(ggExtra)
+```
+
+Let's load the library and test our credentials work fine. There are several ways to use and store our credentials. The recommended option is via environment variables. You can do this in two different ways
+
+1. Manually input them in the code (commented in the code below). This works fine for working locally in your computer if you don't have to share the code. You can either include them in the main code or source them through another file.
+2. Store them as permanent system variables in your `Renviron` file. Much better and secure, but needs extra configuration if you have several Spotify Apps.
+
+```{r}
+library(spotifyr)
+# Uncomment the line below and add you client credentials for manual input
+#Sys.setenv(SPOTIFY_CLIENT_ID = 'XXXXXX')
+#Sys.setenv(SPOTIFY_CLIENT_SECRET = 'XXXXXX')
+access_token <- get_spotify_access_token()
+```
+
+---
+
+Once we have the `access_token` ready, we can test it works fine by running the code below
+
+```{r}
+my_playlists <- spotifyr::get_my_playlists()
+my_playlists %>% 
+  select(name, owner.display_name, tracks.total) %>% 
+  head(6)
+```
+
+If the code below didn't return anything because you have not created or saved any playlists, you can use the following code to get a summary of Spotify main music categories.
+
+```{r}
+spotifyr::get_categories()$name
+```
+
+<br/><br/>
+
+# Intro to the library
+
+---
+
+The [package](https://github.com/charlie86/spotifyr) was created Charlie Thompson in 2017 and is currently in open source, actively maintained by Charlie *et al.* Spotifyr is an R wrapper for pulling track audio features and other information from Spotify’s Web API in bulk.
+
+### Functions 
+
+---
+
+Run `help("spotifyr")` or `ls("package:spotifyr")` to explore all spotifyR functions and help pages. In short, with this package and through the API we can access to several data fetching functions as well as manipulations functions that interact with your Spotify profile.
+
+- Retrieve information related to artists. Eg `get_artist_audio_features` or `get_track_audio_features` to get all track features of a specific artist or set of tracks
+- Retrieve tracks from given playlists or user-based stats `get_playlist_tracks` or `get_my_top_artists_or_tracks`
+- Interact with your own profile. Eg `add_tracks_to_playlist` to add tracks to an existing playlist you own or even `pause_my_playback()` to stop your current playback (if active)
+
+
+### Features
+
+One of the most interesting attributes of this API is the amount of metadata or attributes you can get through it. Besides from the expected tracks metadata such as popularity, albums, length or artists you can get intrinsic music features. See the [Spotify Web API documentation](https://developer.spotify.com/documentation/web-api/reference/#/operations/get-several-audio-features) for a detailed description. 
+
+- `danceability` shows how suitable a track is for dancing
+- `energy` is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity
+- `instrumentalness` predicts whether a track contains no vocals
+- `valence` measures from 0.0 to 1.0 describing the musical positiveness conveyed by a track
+- `liveness` detects the presence of an audience in the recording
+- `key`, `mode`, `tempo` and `time_signature` are estimations of musical properties of the specific track 
+
+
+<br/><br/>
+
+# Hands-on Part 1
+### 1. Exploratory Analysis on Artists 
+
+Let's start by exploring how different artists have evolved over time in different Albums. 
+We first need to pick a set of artists you'd like to explore. You can do it manually by specifying the artists names or collect them automatically through the package by calling `get_my_top_artists_or_tracks(limit = 2)`
+
+```{r}
+#my_artists <- get_my_top_artists_or_tracks(limit = 2) %>% pull(name)
+my_artists <- c('Beyonce', 'AC/DC')
+```
+
+Let's get now all audio features by those artists by calling `get_artist_audio_features`. Note that this function only allows to input one artist, probably to avoid saturating the API calls. We can use `lapply` and `bind_rows` to run the function for several artists. I recommend starting with very few artists, eg 2 to maximum 4, as otherwise it might take too long to run.
+
+You can see all audio features obtained by running `colnames(my_artists_track_features)` before modifying the data frame. For now we are going to filter by the ones we'd like to use in our first example.
+
+```{r}
+my_artists_track_features <- bind_rows(lapply(my_artists, get_artist_audio_features, market = 'US'))
+
+my_artists_track_features <- my_artists_track_features %>% 
+  select(artist_name, album_release_year, danceability, energy, valence, liveness, tempo, duration_ms, track_name, album_name)
+```
+
+Note that we have added the parameter `market` as per package recommendation to avoid duplicates. 
+
+Let's jump now into some summary stats of our artists albums.
+
+```{r}
+my_album_summary_stats <- my_artists_track_features %>% 
+  group_by(artist_name, album_release_year, album_name) %>% 
+  summarise(across(!c(track_name), mean),
+            tracks = n(),
+            .groups = 'drop')
+
+head(my_album_summary_stats)
+```
+
+Note that we would like to get rid of Live albums and focus only on studio recordings. This could be done by trying to match keywords such as 'Live' or 'Tour' in the album name. But we can use one of Spotify's features to do it as well, `liveness`. As suggested by the API documentation, a value above 0.8 provides strong likelihood that the track is live. Let's check it with our data.
+
+```{r}
+my_album_summary_stats %>% 
+  filter(liveness > 0.5) %>% 
+  select(artist_name, album_release_year, album_name, liveness)
+```
+
+For our example artists, all albums with an average liveness score larger than 0.5 is live, so we can use this rule to exclude them from both data frames.
+
+```{r}
+live_albums <- my_album_summary_stats %>% 
+  filter(liveness > 0.5) %>% 
+  pull(album_name)
+
+my_artists_track_features <- my_artists_track_features %>%
+  filter(!album_name %in% live_albums)
+
+my_album_summary_stats <- my_album_summary_stats %>% 
+  filter(!album_name %in% live_albums)
+```
+
+We'd also like to get rid of *special edition* albums, as they are basically copies of other albums plus some extra tracks. This time we will go for a bit more hacky solution and just remove any album containing "edition" on its name. 
+
+```{r}
+my_album_summary_stats %>% 
+  filter(grepl('edition', tolower(album_name)) == TRUE)
+```
+
+```{r}
+special_edition_albums <- my_album_summary_stats %>% 
+  filter(grepl('edition', tolower(album_name)) == TRUE)%>% 
+  pull(album_name)
+
+my_artists_track_features <- my_artists_track_features %>%
+  filter(!album_name %in% special_edition_albums)
+
+my_album_summary_stats <- my_album_summary_stats %>% 
+  filter(!album_name %in% special_edition_albums)
+```
+
+Let's now try to get some insights out of those albums. We can start by getting a summary of the average album energy for each artist over time. 
+
+```{r}
+my_album_summary_stats %>% 
+  ggplot(aes(x = album_release_year, y = energy, color = artist_name)) + 
+  geom_line() + 
+  geom_point() + 
+  theme_bw()
+```
+
+Surprised? AC/DC's music seem to be more energetic than Beyoncé's in average. It's also clear that AC/DC stopped releasing albums for some years and when they came back their energy was lower as well. 
+
+We can generalise the chart above with two extra additions:
+
+- Add one screen for each feature we'd like to investigate
+- In order to have a "comprable" x-axis, let's use the album number (as count of albums from the artists up to that point), instead of the year of release.
+
+```{r}
+my_album_summary_stats %>% 
+  group_by(artist_name) %>% 
+  mutate(album_number = row_number(album_release_year)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = !c(artist_name, album_release_year, album_name, album_number),
+               names_to = 'feature',
+               values_to = 'score') %>% 
+  filter(feature %in% c('danceability', 'energy', 'valence')) %>% 
+  ggplot(aes(x = album_number, y = score, color = artist_name)) + 
+  geom_line() +
+  geom_point() +
+  facet_wrap(.~feature, ncol=1) + 
+  coord_cartesian(ylim = c(0, NA)) + 
+  theme_bw()
+```
+
+
+Lastly, let's check if there's any interesting cluster for their songs in the space energy - valence. For that we'll use the `my_artists_track_features` data frame that we have obtained at the previously.
+
+```{r}
+p <- my_artists_track_features %>% 
+  ggplot(aes(x = energy, y = valence, color = artist_name)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0.5, color = 'grey', linetype = 'dashed') +
+  geom_vline(xintercept = 0.5, color = 'grey', linetype = 'dashed') +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+ggExtra::ggMarginal(p, type = "density", groupColour = TRUE, groupFill = TRUE)
+```
+
+
+Although many Beyoncé songs have actually large energy, she leaves space for balads, characterised by low energy and valence. Interestingly, none of the artists have songs on the low energy and positive valence spectrum. 
+
+To end this first exploratory section let's summarise in a boxplot the main music attributes for each artists. We will take the occasion to personalise a bit the ggplot theme and make it look a bit more in line with Spotify colors by tweaking the theme.
+
+```{r}
+spotify_colors <- list(
+  dark_green = '#1DB954',
+  light_green = '#1ed760',
+  black = '#191414',
+  ligth_grey = '#b3b3b3',
+  white = '#FFFFFF'
+)
+
+theme_spotify <- function(){ #based on monokai theme https://github.com/datarootsio/artyfarty
+  color.background = spotify_colors$black
+  color.grid.major = spotify_colors$white
+  color.text = spotify_colors$dark_green
+  color.text.2 = spotify_colors$light_green
+  color.axis = spotify_colors$white
+  
+  theme_bw(base_size=13, base_family='Tahoma') +
+    theme(
+      
+      panel.background=element_rect(fill=color.background, color=color.background),
+      plot.background=element_rect(fill=color.background, color=color.background),
+      panel.border=element_rect(color=color.background),
+      
+      panel.grid.major=element_line(color=color.grid.major,size=.4, linetype=2),
+      panel.grid.minor=element_blank(),
+      axis.line.x=element_line(color=color.grid.major, size=1),
+      axis.line.y=element_line(color=color.grid.major, size=1),
+      axis.ticks=element_line(color=NA),
+      
+      legend.background = element_rect(fill=color.background),
+      legend.key = element_rect(fill=color.background, color=NA),
+      legend.text = element_text(size=rel(.8),color=color.text.2),#color.axis.title),
+      legend.title = element_text(color=color.text, face = 'bold'),
+      
+      plot.title=element_text(color=color.text, size=rel(1.2), hjust=.5, face = 'bold'),
+      axis.text.x=element_text(size=rel(.95),color=color.text),
+      axis.text.y=element_text(size=rel(.95),color=color.text),
+      axis.title.x=element_text(size=rel(1),color=color.text, vjust=0),
+      axis.title.y=element_text(size=rel(1),color=color.text, vjust=1.25)
+    )
+}
+
+monokai_palette <- c(
+  "#F92672",
+  "#FD971F",
+  "#F4BF75",
+  "#A6E22E",
+  "#A1EFE4",
+  "#66D9EF",
+  "#AE81FF",
+  "#CC6633"
+)
+```
+
+
+```{r}
+my_artists_track_features %>% 
+  pivot_longer(cols = !c(track_name, artist_name, album_release_year, album_name),
+               names_to = 'feature',
+               values_to = 'score') %>% 
+  filter(feature %in% c('danceability', 'energy', 'valence')) %>% 
+  ggplot(aes(x = feature, y = score, color = artist_name)) +
+  geom_boxplot(fill = spotify_colors$black) +
+  labs(y='Score', x=NULL, color = 'Artist', title = 'Artists scores on music features') +
+  scale_color_manual(values=monokai_palette) +
+  theme_spotify()
+```
+
+The chart above confirms something that might be quite intuitive for the listeners. AC/DC songs are much more consistent among them and have less variance, while Beyoncé's music might cover a wider range of emotions or dynamics.
+
+<br/><br/>
+
+# Hands-on Part 2
+
+### Create customised recommended Playlists
+
