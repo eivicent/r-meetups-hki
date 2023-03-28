@@ -2,15 +2,19 @@
 title: "SpotifyR Workshop<br>R User Group Finland"
 author: "Marc Eixarch"
 date: "3/26/2023"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
 ---
+
+<br/><br/>
 
 # Prerequisites
 
 --- 
 
-- Make sure to follow the instructions given in our (github page)[https://github.com/eivicent/r-meetups-hki/tree/main/2023_03_28_SpotifyR] to get your Spofity client ID and Secret
-- Install spotifyR library `install.packages('spotifyr')`
+- Make sure to follow the instructions given in our [github page](https://github.com/eivicent/r-meetups-hki/tree/main/2023_03_28_SpotifyR) to **get your Spofity client ID and Secret**
+- **Install spotifyR library** `install.packages('spotifyr')`
 
 --- 
 
@@ -18,9 +22,7 @@ During the workshop we will use the following libraries
 
 ```{r}
 # Core
-library(tidyr)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
 
 # Optional
 library(ggExtra)
@@ -39,9 +41,29 @@ library(spotifyr)
 access_token <- get_spotify_access_token()
 ```
 
+<br/><br/>
+
 ---
 
-Once we have the `access_token` ready, we can test it works fine by running the code below
+**Important parenthesis**: it seems Spotify has been doing changes recently to its online documentation. Some functions in the package point to specific url that have been now renamed and return a 404 Error, invalidating the whole function. This is a hacky workaround to avoid that error until there is a proper fix. This already happened in the past (see stack overflow [thread](https://stackoverflow.com/questions/69649706/error-while-trying-to-extract-spotify-data-using-r)), so I just updated it to the new url. 
+
+**In summary**, if you get an error when running some functions, you can run the snippet below to solve it.
+
+```{r}
+scopes <- function() {
+  xml2::read_html("https://developer.spotify.com/documentation/web-api/concepts/scopes/") %>% 
+  rvest::html_elements("code") %>% rvest::html_text() %>% 
+  unique()
+}
+
+assignInNamespace("scopes", scopes, ns = "spotifyr")
+```
+
+---
+
+<br/><br/>
+
+Back to work... Once we have the `access_token` ready, we can test it works fine by running the code below
 
 ```{r}
 my_playlists <- spotifyr::get_my_playlists()
@@ -90,7 +112,7 @@ One of the most interesting attributes of this API is the amount of metadata or 
 <br/><br/>
 
 # Hands-on Part 1
-### 1. Exploratory Analysis on Artists 
+### Exploratory Analysis on Artists 
 
 Let's start by exploring how different artists have evolved over time in different Albums. 
 We first need to pick a set of artists you'd like to explore. You can do it manually by specifying the artists names or collect them automatically through the package by calling `get_my_top_artists_or_tracks(limit = 2)`
@@ -108,7 +130,7 @@ You can see all audio features obtained by running `colnames(my_artists_track_fe
 my_artists_track_features <- bind_rows(lapply(my_artists, get_artist_audio_features, market = 'US'))
 
 my_artists_track_features <- my_artists_track_features %>% 
-  select(artist_name, album_release_year, danceability, energy, valence, liveness, tempo, duration_ms, track_name, album_name)
+  select(artist_name, album_release_year, danceability, energy, valence, liveness, tempo, duration_ms, track_name, album_name, track_id, artist_id)
 ```
 
 Note that we have added the parameter `market` as per package recommendation to avoid duplicates. 
@@ -181,7 +203,7 @@ Surprised? AC/DC's music seem to be more energetic than Beyoncé's in average. I
 We can generalise the chart above with two extra additions:
 
 - Add one screen for each feature we'd like to investigate
-- In order to have a "comprable" x-axis, let's use the album number (as count of albums from the artists up to that point), instead of the year of release.
+- In order to have a "comparable" x-axis, let's use the album number (as count of albums from the artists up to that point), instead of the year of release.
 
 ```{r}
 my_album_summary_stats %>% 
@@ -216,9 +238,32 @@ ggExtra::ggMarginal(p, type = "density", groupColour = TRUE, groupFill = TRUE)
 ```
 
 
-Although many Beyoncé songs have actually large energy, she leaves space for balads, characterised by low energy and valence. Interestingly, none of the artists have songs on the low energy and positive valence spectrum. 
+Although many Beyoncé songs have actually large energy, she leaves space for ballads, characterised by low energy and valence. Interestingly, none of the artists have songs on the low energy and positive valence spectrum. We can encapsulate this in a more clear chart, plus we can highlight the position of the top 3 most popular songs for each artists. However for this last point we'll have to call a new function, `get_artist_top_tracks`, as the field `popularity` is not returned in our previous functions.
 
-To end this first exploratory section let's summarise in a boxplot the main music attributes for each artists. We will take the occasion to personalise a bit the ggplot theme and make it look a bit more in line with Spotify colors by tweaking the theme.
+```{r}
+top_tracks <- bind_rows(lapply(unique(my_artists_track_features$artist_id), get_artist_top_tracks))
+
+top_tracks %>% 
+  select(id, popularity) %>% 
+  right_join(my_artists_track_features, by=c('id'='track_id')) %>% 
+  group_by(artist_name) %>% 
+  mutate(rank_top_song = row_number(desc(popularity))) %>% 
+  ggplot(aes(x = energy, y = valence, color = artist_name)) + 
+  geom_point() + 
+  geom_label(aes(label = ifelse(rank_top_song<=3, track_name, NA))) + 
+  geom_hline(yintercept = 0.5, color = 'grey', linetype = 'dashed') +
+  geom_vline(xintercept = 0.5, color = 'grey', linetype = 'dashed') +
+  annotate('text', 0.25 / 2, 0.95, label = "Hopeful Ballads", fontface = "italic") +
+  annotate('text', 1.75 / 2, 0.95, label = "Vibrant Cheerful", fontface = "italic") +
+  annotate('text', 1.75 / 2, 0.05, label = "Vibrant Enraged", fontface = "italic") +
+  annotate('text', 0.25 / 2, 0.05, label = "Sad Ballads", fontface = "italic") +
+  theme_minimal() + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  labs(x='Energy', y='Valence', color='Artist', title = 'Songs mood')
+```
+
+
+Remember this classification as we might use it later on! To end this first exploratory section let's summarise in a boxplot the main music attributes for each artists. We will take the occasion to personalise a bit the ggplot theme and make it look a bit more in line with Spotify colors by tweaking the theme.
 
 ```{r}
 spotify_colors <- list(
@@ -245,6 +290,7 @@ theme_spotify <- function(){ #based on monokai theme https://github.com/dataroot
       
       panel.grid.major=element_line(color=color.grid.major,size=.4, linetype=2),
       panel.grid.minor=element_blank(),
+      panel.grid.major.x=element_blank(),
       axis.line.x=element_line(color=color.grid.major, size=1),
       axis.line.y=element_line(color=color.grid.major, size=1),
       axis.ticks=element_line(color=NA),
@@ -277,7 +323,7 @@ monokai_palette <- c(
 
 ```{r}
 my_artists_track_features %>% 
-  pivot_longer(cols = !c(track_name, artist_name, album_release_year, album_name),
+  pivot_longer(cols = !c(track_name, artist_name, album_release_year, album_name, track_id, artist_id),
                names_to = 'feature',
                values_to = 'score') %>% 
   filter(feature %in% c('danceability', 'energy', 'valence')) %>% 
@@ -290,9 +336,108 @@ my_artists_track_features %>%
 
 The chart above confirms something that might be quite intuitive for the listeners. AC/DC songs are much more consistent among them and have less variance, while Beyoncé's music might cover a wider range of emotions or dynamics.
 
+You can try to get similar insights from the artists you picked!
+
 <br/><br/>
 
 # Hands-on Part 2
 
 ### Create customised recommended Playlists
+
+Let's start by exploring a bit our own data. 
+
+```{r}
+my_top_artists <- get_my_top_artists_or_tracks(
+  type = "artists", 
+  limit = 50, #the maximum
+  time_range = "medium_term" #about 6 months history
+)
+
+my_top_artists %>% 
+  select(name, genres, popularity)
+```
+
+<br/>
+
+What are my top genres?
+
+```{r}
+my_top_artists %>% 
+  unnest(genres) %>% 
+  group_by(genres) %>% 
+  summarise(artists = n()) %>% 
+  arrange(desc(artists)) %>% 
+  head(10) %>% 
+  arrange(artists) %>% 
+  mutate(genres = factor(genres, genres)) %>% 
+  ggplot(aes(x=genres, y = artists)) + 
+  geom_segment(aes(x=genres, xend=genres, y=0, yend=artists),
+               color = spotify_colors$light_green) +
+  geom_point(size = 3, color = spotify_colors$dark_green) + 
+  coord_flip() +
+  theme_spotify() + 
+  theme(panel.grid.major = element_blank(), 
+        #panel.grid.minor.x = element_line(color='white',size=.4, linetype=2),
+        axis.line.x = element_blank(),
+        axis.line.y = element_blank(),
+        ) +
+  labs(x='Genre', y='Number of Artists', title = 'My Top 10 genres')
+```
+
+<br/>
+
+How mainstream am I?
+
+```{r}
+my_top_artists %>% 
+  ggplot(aes(x=popularity)) + 
+  geom_density(color = spotify_colors$black, fill = spotify_colors$dark_green) +
+  coord_cartesian(xlim = c(0,100)) +
+  theme_spotify() 
+```
+
+You can compare to your neighbor...
+
+<br/>
+
+---
+
+To end with, we will create a playlist based on our recommendations using `get_recommendations`. The function has many parameters which allows to be quite creative with the conditions we want to apply.
+
+We can feed it with three different *seeds*, which will trigger specific recommendations: `seed_artists`, `seed_genres` and `seed_tracks`. And then give max, min and target values for several of the audio features we have been exploring. Let's try to create a playlist made of sad ballads and based on our top 5 artists. How would you approach it?
+
+```{r}
+my_sad_ballads <- get_recommendations(
+  seed_artists = head(my_top_artists, 5)$id,
+  max_energy = 0.5,
+  max_valence = 0.5
+)
+```
+
+Now that we have the tracks, let's create the empty playlist.
+
+```{r}
+create_playlist(
+  user_id = 'wirk',
+  name = 'My Sad Ballads',
+  description = 'Generated with R!'
+)
+```
+
+And now populate it with our recommendations
+
+```{r}
+add_tracks_to_playlist(
+  playlist_id = '5D2UoHWtwQbF11GQTKqzpA', #get it from the output of the previous function
+  uris = my_sad_ballads$id
+)
+```
+
+And that's all for today's workshop! This was just an introduction to the functions, much more can be done. Hope you enjoyed and hope this triggered some curiosity to generate some visualisations and insights by yourselves.
+
+
+
+
+
+
 
