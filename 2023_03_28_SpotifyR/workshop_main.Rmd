@@ -47,16 +47,16 @@ access_token <- get_spotify_access_token()
 
 **Important parenthesis**: it seems Spotify has been doing changes recently to its online documentation. Some functions in the package point to specific url that have been now renamed and return a 404 Error, invalidating the whole function. This is a hacky workaround to avoid that error until there is a proper fix. This already happened in the past (see stack overflow [thread](https://stackoverflow.com/questions/69649706/error-while-trying-to-extract-spotify-data-using-r)), so I just updated it to the new url. 
 
-**In summary**, if you get an error when running some functions, you can run the snippet below to solve it.
+**In summary**, if you get an error when running some functions, you can run the snippet below to try to solve it. Otherwise, you can just skip it and ignore it.
 
 ```{r}
-scopes <- function() {
-  xml2::read_html("https://developer.spotify.com/documentation/web-api/concepts/scopes/") %>% 
-  rvest::html_elements("code") %>% rvest::html_text() %>% 
-  unique()
-}
-
-assignInNamespace("scopes", scopes, ns = "spotifyr")
+# scopes <- function() {
+#   xml2::read_html("https://developer.spotify.com/documentation/web-api/concepts/scopes/") %>% 
+#   rvest::html_elements("code") %>% rvest::html_text() %>% 
+#   unique()
+# }
+# 
+# assignInNamespace("scopes", scopes, ns = "spotifyr")
 ```
 
 ---
@@ -140,7 +140,7 @@ Let's jump now into some summary stats of our artists albums.
 ```{r}
 my_album_summary_stats <- my_artists_track_features %>% 
   group_by(artist_name, album_release_year, album_name) %>% 
-  summarise(across(!c(track_name), mean),
+  summarise(across(where(is.numeric), mean),
             tracks = n(),
             .groups = 'drop')
 
@@ -418,7 +418,7 @@ Now that we have the tracks, let's create the empty playlist.
 
 ```{r}
 create_playlist(
-  user_id = 'wirk',
+  user_id = 'your_spotify_username',
   name = 'My Sad Ballads',
   description = 'Generated with R!'
 )
@@ -428,7 +428,7 @@ And now populate it with our recommendations
 
 ```{r}
 add_tracks_to_playlist(
-  playlist_id = '5D2UoHWtwQbF11GQTKqzpA', #get it from the output of the previous function
+  playlist_id = 'your_new_playlist_list', #get it from the output of the previous function
   uris = my_sad_ballads$id
 )
 ```

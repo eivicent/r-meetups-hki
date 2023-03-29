@@ -1,7 +1,5 @@
 ## Before the Workshop
 
----
-
 ### Requirements
 
 - In order to explore Spotify's data, one must have access to a Spotify account. The subscription type does not matter (free, paid, ...). Make sure to remember your username or email and password.
@@ -39,3 +37,13 @@
 		get_categories()
 
 For more details you can check the official readme in SpotifyR [github page](https://github.com/charlie86/spotifyr).
+
+# Examples 
+
+<img src="man/figures/song_moods.png" width="50%" />
+
+<img src="man/figures/summary_stats.png" width="50%" />
+
+<img src="man/figures/my_top_10.png" width="50%" />
+
+<img src="man/figures/mainstreamness_curve.png" width="50%" />
