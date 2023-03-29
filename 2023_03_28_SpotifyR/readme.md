@@ -40,10 +40,10 @@ For more details you can check the official readme in SpotifyR [github page](htt
 
 # Examples 
 
-<img src="man/figures/song_moods.png" width="50%" />
+<img src="figures/song_moods.png" width="50%" />
 
-<img src="man/figures/summary_stats.png" width="50%" />
+<img src="figures/summary_stats.png" width="50%" />
 
-<img src="man/figures/my_top_10.png" width="50%" />
+<img src="figures/my_top_10.png" width="50%" />
 
-<img src="man/figures/mainstreamness_curve.png" width="50%" />
+<img src="figures/mainstreamness_curve.png" width="50%" />
