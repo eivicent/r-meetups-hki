@@ -1,6 +1,14 @@
 # r-meetups-hki
 Repository to drop the materials for the r-meetups in Helsinki
 
+### 2023-03-28 - SpotifyR Workshop
+
+- Workshop about the library [spotifyr](https://github.com/charlie86/spotifyr). 
+  - By [Marc](https://www.linkedin.com/in/marc-eixarch/)
+  - How to get music features from artists and songs and visualise them in different ways. 
+  - Interact with your personal account and create personalised playlists using R.
+  - R Notebook code, html document and instructions can be found it the workshop [folder](./2023_03_28_SpotifyR/)
+
 ### 2023-01-24 - 2023 Kickoff and short talks
 - Presentation of the new organizers
 	- [Presentation](./2023_01_24_Kickoff/)
