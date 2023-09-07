@@ -1,0 +1,92 @@
+Load libraries
+
+```{r}
+#install.packages('tidytuesdayR')
+#install.packages('ggrepel')
+
+library(tidytuesdayR)
+library(tidyverse)
+library(ggrepel)
+```
+
+Get data
+```{r}
+data <- tidytuesdayR::tt_load(2023, week = 17)
+winners <- data$winners
+london_marathon <- data$london_marathon
+```
+
+Explore `winners` table
+```{r}
+summary(winners)
+
+winners %>% count(Category)
+
+winners$Nationality %>% unique()
+
+winners %>% 
+  group_by(Year, Category) %>% 
+  filter(n() > 1)
+```
+
+Explore `london_marathon` table
+```{r}
+summary(london_marathon)
+```
+
+Funnel over time
+```{r}
+london_marathon %>% 
+  pivot_longer(cols = Applicants:Finishers, names_to = 'category', values_to = 'number') %>% 
+  ggplot(aes(x = Year, y = number, color = category)) + 
+  geom_line()
+```
+
+Time to finish over time
+```{r}
+winners %>% 
+  ggplot(aes(x=Year, y=Time, color=Category)) + 
+  #geom_line() +
+  geom_point() +
+  geom_smooth() +
+  geom_label_repel(data = . %>% filter(Year %in% c(1990:1995)),
+            aes(label = Nationality),
+            max.overlaps = 20) +
+  facet_wrap(vars(Category), scales = 'free_y')
+```
+
+Winner's distribution by country and time
+```{r}
+winners %>% 
+  filter(Category %in% c('Men', 'Women')) %>% 
+  unite("country_cat", Nationality, Category, sep = ' - ') %>% 
+  #filter(Category == 'Men') %>% 
+  #filter(n() > 1, .by = Nationality) %>% 
+  group_by(Athlete) %>% 
+  mutate(first_win_year = min(Year),
+         athlete_wins = n()) %>% 
+  #group_by(Nationality, Category) %>% 
+  group_by(country_cat) %>% 
+  mutate(order_id = dense_rank(first_win_year),
+         total_wins = n(),
+         max_year_win = max(Year)) %>% 
+  #ggplot(aes(x=fct_reorder(Nationality, total_wins), y=Year)) + 
+  ggplot(aes(x=country_cat, y=Year)) + 
+  #geom_boxplot() +
+  geom_point(aes(color = as.factor(order_id), 
+                 #shape = as.factor(desc(athlete_wins))
+                 ), 
+             shape = 'square',
+             size =3) +
+  #facet_wrap(vars(Category)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank()) +
+  labs(color = 'Runner #', x = NULL, y = NULL)
+```
+
+
+
+
+
