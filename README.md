@@ -1,6 +1,9 @@
 # r-meetups-hki
 Repository to drop the materials for the r-meetups in Helsinki
 
+### 2023-09-07 - Meet and code together #tidytuesday
+- Hang out to analyze together some data from the tidytuesda community
+
 ### 2023-03-28 - SpotifyR Workshop
 
 - Workshop about the library [spotifyr](https://github.com/charlie86/spotifyr). 
