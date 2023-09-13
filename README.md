@@ -2,17 +2,18 @@
 Repository to drop the materials for the r-meetups in Helsinki
 
 ### 2023-09-07 - Meet and code together #tidytuesday
-- Hang out to analyze together some data from the tidytuesda community
+- Hang out to analyze together some data from the tidytuesday community
+- Material, including slides and some code created during the event, can be found in the [event folder](./2023_09_07_Tidytuesday)
 
 ### 2023-05-22 - Welcoming Summer: Joined Event with R-Ladies Helsinki
 Talks about applications for R in Academia and Business in Hive's premises:
 - How R species interacting? The use of R in ecological research
 	- By [Federica Manca](https://www.linkedin.com/in/federica-manca-aa8b36174/)
-	- Presentation can be found [here](./2023_05_22_Welcoming_Summer)
 - How R helps my business to progress
 	- By [Afonso Lugo](https://www.linkedin.com/in/afonso-lugo/)
 - Aurora hunting in a cloudy day
 	- By [Rishi Dash Roy](https://www.linkedin.com/in/rishi-das-roy-80806a7/)
+
 The presentations can be found in the [event folder](./2023_05_22_Welcoming_Summer/)
 
 ### 2023-03-28 - SpotifyR Workshop
