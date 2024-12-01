@@ -6,7 +6,7 @@ Repository to drop the materials for the r-meetups in Helsinki
 Reactivating the R Meetups after some time of inactivity. An active group of R users gathered and shared some of their current projects and tips with R:
 
 - Vicent shared some tips on using Github Actions to automate R executions, for example to scrape html files on a regular basis and keeping track of European swing dancing events
-- Marc shared some tips for creating a simple ggplot theme to level up all your visualisations with a single line. You can find the files in the [event folder](./2024_11_25_Hang_Out) 
+- Marc shared some tips for creating a simple ggplot theme to level up all your visualisations with a single line. You can find the files in the [event folder](./2024_11_25_Hang_out) 
 - Antti Rask shared with us some useful ggplot extensions and updated the group about the progress of his WIP ggplot2 extensions [book](https://ggplot2-extended-book.com/). Worth a visit! 
 
 ### 2023-09-07 - Meet and code together #tidytuesday
