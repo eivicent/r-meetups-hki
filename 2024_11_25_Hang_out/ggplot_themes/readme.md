@@ -1,0 +1,1 @@
+During the R meetup event, we talked about using github actions to automate pipelines and how to create a custom and simple ggplot theme that can be called from any ggplot pipe. In the folder ggplot_themes we have uploaded the R files used during the demo. Thanks for coming!
